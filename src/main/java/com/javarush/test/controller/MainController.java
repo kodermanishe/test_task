@@ -19,6 +19,8 @@ public class MainController {
     PartRepo partRepo;
 
     private SortTypes sortType = SortTypes.ALL;
+    private String filter = new String();
+    private int p = 1;
 
     @GetMapping("/")
     public String getMainPage(){
@@ -26,16 +28,15 @@ public class MainController {
     }
 
     @GetMapping("/listParts/{page}")
-    public String getListParts(@RequestParam(required = false, defaultValue = "") String name,
-                               @PathVariable Integer page,
+    public String getListParts(@PathVariable Integer page,
                                Model model){
 
         String title = new String();
         List<Part> result = new ArrayList<>();
 
-        if(!Objects.isNull(name) && !name.isEmpty()){
+        if(!Objects.isNull(filter) && !filter.isEmpty()){
             title = "Найденные комплектующие";
-            result = partRepo.findByName(name);
+            result = partRepo.findByName(filter);
         }else {
             title = "Список комплектующих, страница "+page;
             if(sortType == SortTypes.ALL)
@@ -49,16 +50,28 @@ public class MainController {
         PageMap pageMap = new PageMap(result);
         List<Part> allParts = partRepo.findByNecessary(true);
 
+        if (pageMap.size() < page)
+            page--;
+        p = page;
+
         int countPc = allParts.stream().mapToInt(p -> p.getQuantity()).min().getAsInt();
 
         model.addAttribute("title", title);
         model.addAttribute("parts", pageMap.get(page) == null?Collections.EMPTY_LIST:pageMap.get(page));
-        model.addAttribute("filter", name);
+        model.addAttribute("filter", filter);
         model.addAttribute("pages", pageMap.keySet());
         model.addAttribute("defPage", page);
         model.addAttribute("countPc", countPc);
         return "subPage";
     }
+
+    @GetMapping("/listFilter/{page}")
+    public String getListPartsFilter(@RequestParam(required = false, defaultValue = "") String name,
+                               @PathVariable Integer page){
+        filter = name;
+        return "redirect:/listParts/1";
+    }
+
 
     @GetMapping("/edit/{part}")
     public String editData(@PathVariable Part part, Model model){
@@ -72,7 +85,7 @@ public class MainController {
     @GetMapping("/delete/{part}")
     public String deleteData(@PathVariable Part part){
         partRepo.delete(part);
-        return "redirect:/listParts/1";
+        return "redirect:/listParts/"+p;
     }
 
     @PostMapping("/makeChanges/{part}")
@@ -87,7 +100,7 @@ public class MainController {
             partRepo.save(part);
         }
 
-        return "redirect:/listParts/1";
+        return "redirect:/listParts/"+p;
     }
 
     @PostMapping("/addNew")
@@ -100,7 +113,7 @@ public class MainController {
             }
             partRepo.save(part);
         }
-        return "redirect:/listParts/1";
+        return "redirect:/listParts/"+p;
     }
 
     @GetMapping("/addPage")
@@ -111,7 +124,7 @@ public class MainController {
     @GetMapping("/allSort")
     public String setAllSort(){
         sortType = SortTypes.ALL;
-        return "redirect:/listParts/1";
+        return "redirect:/listParts/"+p;
     }
 
     @GetMapping("/necessary")
@@ -123,7 +136,7 @@ public class MainController {
     @GetMapping("/option")
     public String setOptionSort(){
         sortType = SortTypes.OPTION;
-        return "redirect:/listParts/1";
+        return "redirect:/listParts/"+p;
     }
 
     class PageMap extends HashMap<Integer, List>{
@@ -137,7 +150,7 @@ public class MainController {
 
                 for (int i = 1; i <= pageCount; i++){
                     int s = (i-1)*10;
-                    put(i, list.subList(s, i==pageCount?s+rem:s+10));
+                    put(i, list.subList(s, i==pageCount && rem > 0?s+rem:s+10));
                 }
 
             }

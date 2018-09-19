@@ -89,7 +89,7 @@
             <b>${title}</b>
         </div>
         <div>
-            <form action="/listParts/${defPage}" method="get">
+            <form action="/listFilter/${defPage}" method="get">
                 <div class="function_margin">
                 <a href="/addPage"><img src="../images/add.png" alt="" width="15" height="15"></a>
                 <input type="text" name="name" value="${filter}">
